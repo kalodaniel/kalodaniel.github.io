@@ -79,36 +79,54 @@
   <script>
    
 
-function saveData() {
-  var data = []; // Az adatok, amiket a JSON fájlba szeretnél menteni
-  
-  var apiURL = 'https://api.github.com/repos/kalodaniel/kalodaniel.github.io/contents/breasts.json';
-  var token = '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'; // A GitHub API-hoz szükséges hozzáférési token
+   function saveData() {
+  var table = document.querySelector("table");
+  var rows = table.rows;
+  var data = [];
 
-  var jsonData = JSON.stringify(data);
-  var encodedData = btoa(jsonData);
-  
-  fetch(apiURL, {
-    method: 'PUT',
+  for (var i = 1; i < rows.length; i++) {
+    var cells = rows[i].cells;
+    var rowData = [];
+
+    for (var j = 0; j < cells.length - 2; j++) {
+      rowData.push(cells[j].textContent.trim());
+    }
+
+    rowData.push(cells[4].getAttribute("data-value")); // Nehézség érték hozzáadása
+    data.push(rowData);
+  }
+
+  var csvContent = "data:text/csv;charset=utf-8,";
+  data.forEach(function(row) {
+    csvContent += row.join(";") + "\r\n"; // Pontosvessző elválasztás
+  });
+
+  const githubApiUrl = "https://api.github.com/repos/kalodaniel/kalodaniel.github.io/contents/breasts.txt";
+  const githubToken = "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"; // Helyettesítsd be a GitHub hozzáférési tokened
+  const fileContent = csvContent;
+
+  const requestOptions = {
+    method: "PUT",
     headers: {
-      'Authorization': 'token ' + token,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${githubToken}`
     },
     body: JSON.stringify({
-      message: 'Mentett adatok',
-      content: encodedData,
-      branch: 'main',
-      path: 'breasts.json',
+      message: "Update breasts.txt",
+      content: btoa(fileContent)
     })
-  })
-  .then(response => response.json())
-  .then(result => {
-    console.log('Siker: ', result);
-  })
-  .catch(error => {
-    console.error('Hiba: ', error);
-  });
+  };
+
+  fetch(githubApiUrl, requestOptions)
+    .then(response => response.json())
+    .then(data => {
+      console.log("File saved:", data);
+    })
+    .catch(error => {
+      console.error("Error saving file:", error);
+    });
 }
+
 
 
     
