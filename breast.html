@@ -75,55 +75,135 @@
   
   <button onclick="addRow()">Új Sor</button>
   <button onclick="saveData()">Mentés</button>
+  <button onclick="loadData()">Betöltés</button>
 
   <script>
+   
 
+   var db;
 
-    function saveData() {
+   function saveData() {
   var table = document.querySelector("table");
   var rows = table.rows;
   var data = [];
 
   for (var i = 1; i < rows.length; i++) {
     var cells = rows[i].cells;
-    var rowData = [];
+    var rowData = {};
 
-    for (var j = 0; j < cells.length - 2; j++) {
-      rowData.push(cells[j].textContent.trim());
-    }
+    rowData.gyakorlat = cells[0].textContent.trim();
+    rowData.suly = cells[1].textContent.trim();
+    rowData.ismetles = cells[2].textContent.trim();
+    rowData.piheno = cells[3].textContent.trim();
+    rowData.nehezseg = cells[4].textContent.trim();
 
-    rowData.push(cells[4].getAttribute("data-value")); // Nehézség érték hozzáadása
     data.push(rowData);
   }
 
-  var jsonData = JSON.stringify(data);
-  var base64Data = btoa(unescape(encodeURIComponent(jsonData)));
+  var request = indexedDB.open("breat", 1);
 
-  var apiUrl = "https://api.github.com/repos/kalodaniel/kalodaniel.github.io/contents/breasts.json";
-  var requestData = {
-    message: "Update data",
-    content: base64Data
+  request.onerror = function(event) {
+    console.log("Hiba a tárolás során: " + event.target.errorCode);
   };
 
-  fetch(apiUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer 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"
-    },
-    body: JSON.stringify(requestData)
-  })
-    .then(function(response) {
-      if (response.ok) {
-        alert("Data saved successfully!");
-      } else {
-        throw new Error("Failed to save data: " + response.status);
-      }
-    })
-    .catch(function(error) {
-      console.error(error);
-    });
+  request.onsuccess = function(event) {
+    var db = event.target.result;
+
+    var transaction = db.transaction("tableData", "readwrite");
+    var store = transaction.objectStore("tableData");
+
+    store.clear(); // Adatok törlése az adatbázisból
+
+    for (var i = 0; i < data.length; i++) {
+      store.add(data[i]);
+    }
+
+    transaction.oncomplete = function() {
+      console.log("Az adatok sikeresen el lettek mentve.");
+    };
+
+    transaction.onerror = function(event) {
+      console.log("Hiba a tárolás során: " + event.target.errorCode);
+    };
+  };
 }
+
+
+function loadData() {
+  var request = indexedDB.open("breat", 1);
+
+  request.onerror = function(event) {
+    console.log("Hiba az adatbázis megnyitása közben: " + event.target.errorCode);
+  };
+
+  request.onsuccess = function(event) {
+    var db = event.target.result;
+
+    var transaction = db.transaction("tableData", "readonly");
+    var store = transaction.objectStore("tableData");
+
+    var rows = document.querySelector("table").rows;
+
+    // Táblázat sorainak törlése, kivéve az első sor (fejléc)
+    for (var i = rows.length - 1; i > 0; i--) {
+      document.querySelector("table").deleteRow(i);
+    }
+
+    var cursorRequest = store.openCursor();
+
+    cursorRequest.onerror = function(event) {
+      console.log("Hiba a kurzor nyitása közben: " + event.target.errorCode);
+    };
+
+    cursorRequest.onsuccess = function(event) {
+      var cursor = event.target.result;
+
+      if (cursor) {
+        var rowData = cursor.value;
+        var row = document.querySelector("table").insertRow(-1);
+
+        var cells = [];
+        for (var j = 0; j < 6; j++) {
+          cells.push(row.insertCell(j));
+        }
+
+        cells[0].contentEditable = true;
+        cells[0].textContent = rowData.gyakorlat;
+        cells[1].contentEditable = true;
+        cells[1].textContent = rowData.suly;
+        cells[2].contentEditable = true;
+        cells[2].textContent = rowData.ismetles;
+        cells[3].contentEditable = true;
+        cells[3].textContent = rowData.piheno;
+
+        var difficultyCell = cells[4];
+        difficultyCell.className = rowData.nehezseg.toLowerCase();
+        difficultyCell.setAttribute("data-value", rowData.nehezseg);
+        difficultyCell.textContent = rowData.nehezseg;
+
+        var deleteCell = cells[5];
+        deleteCell.className = "delete-icon";
+        deleteCell.innerHTML = "&#128465;";
+        deleteCell.addEventListener("click", function() {
+          deleteRow(this);
+        });
+
+        cursor.continue();
+      }
+    };
+
+    transaction.oncomplete = function() {
+      // Meghívjuk a toggleDifficulty függvényt a betöltött sorok nehézségcelláin
+      var difficultyCells = document.querySelectorAll("td:nth-child(5)");
+      for (var k = 0; k < difficultyCells.length; k++) {
+        var difficultyCell = difficultyCells[k];
+        toggleDifficulty(difficultyCell);
+      }
+    };
+  };
+}
+
+
 
 
 
@@ -186,55 +266,31 @@
       table.deleteRow(row.rowIndex);
     }
     
-    function loadTableData() {
-      fetch("breast.csv")
-        .then(response => response.text())
-        .then(data => {
-          var rowsData = data.split("\n");
-          var table = document.querySelector("table");
-          
-          for (var i = 1; i < rowsData.length; i++) {
-            var rowData = rowsData[i].split(";");
-            if (rowData.length === 5) {
-              var row = table.insertRow(-1);
-              
-              var cells = [];
-              for (var j = 0; j < 6; j++) {
-                cells.push(row.insertCell(j));
-              }
-              
-              cells[0].contentEditable = true;
-              cells[0].textContent = rowData[0];
-              cells[1].contentEditable = true;
-              cells[1].textContent = rowData[1];
-              cells[2].contentEditable = true;
-              cells[2].textContent = rowData[2];
-              cells[3].contentEditable = true;
-              cells[3].textContent = rowData[3];
-              
-              var difficultyCell = cells[4];
-              difficultyCell.className = rowData[4].toLowerCase();
-              difficultyCell.setAttribute("data-value", rowData[4]);
-              difficultyCell.textContent = rowData[4];
-              difficultyCell.addEventListener("click", function() {
-                toggleDifficulty(this);
-              });
-              
-              var deleteCell = cells[5];
-              deleteCell.className = "delete-icon";
-              deleteCell.innerHTML = "&#128465;";
-              deleteCell.addEventListener("click", function() {
-                deleteRow(this);
-              });
-            }
-          }
-        })
-        .catch(error => {
-          console.error("Hiba a táblázat adatok betöltésekor:", error);
-        });
+    function initializeDB() {
+      var request = indexedDB.open("breat", 1);
+
+      request.onerror = function(event) {
+        console.log("Hiba az adatbázis inicializálásakor: " + event.target.errorCode);
+      };
+
+      request.onupgradeneeded = function(event) {
+        db = event.target.result;
+
+        var objectStore = db.createObjectStore("tableData", { keyPath: "id", autoIncrement: true });
+
+        objectStore.transaction.oncomplete = function(event) {
+          console.log("Az adatbázis inicializálva.");
+        };
+      };
+
+      request.onsuccess = function(event) {
+        db = event.target.result;
+        console.log("Az adatbázis csatlakoztatva.");
+      };
     }
-    
-    loadTableData();
+
+    initializeDB();
+    loadData()
   </script>
 </body>
 </html>
