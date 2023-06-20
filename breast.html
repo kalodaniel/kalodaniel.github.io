@@ -81,35 +81,54 @@
   var table = document.querySelector("table");
   var rows = table.rows;
   var data = [];
-  
+
   for (var i = 1; i < rows.length; i++) {
     var cells = rows[i].cells;
     var rowData = [];
-    
+
     for (var j = 0; j < cells.length - 2; j++) {
       rowData.push(cells[j].textContent.trim());
     }
-    
+
     rowData.push(cells[4].getAttribute("data-value")); // Nehézség érték hozzáadása
     data.push(rowData);
   }
-  
-  var csvContent = "data:text/csv;charset=utf-8,";
-  data.forEach(function(row) {
-    csvContent += row.join(";") + "\r\n"; // Pontosvessző elválasztás
-  });
-  
-  // Fájl letöltése
-  var encodedUri = encodeURI(csvContent);
-  var link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "breast.csv");
-  document.body.appendChild(link);
-  
-  link.click();
-  
-  document.body.removeChild(link);
+
+  var fileContent = JSON.stringify(data, null, 2); // JSON tartalom előkészítése
+
+  // GitHub API hívás a fájl létrehozásához vagy frissítéséhez
+  var apiUrl = 'https://github.com/kalodaniel/kalodaniel.github.io/contents/breasts.json';
+  var owner = 'kalodaniel'; // GitHub felhasználónév
+  var repo = 'kalodaniel.github.io'; // Repository neve
+  var path = 'breasts.json'; // Fájl elérési útvonala a repository-ban
+
+  var authHeader = 'Bearer ' + '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'; // GitHub token
+
+  fetch(apiUrl.replace('kalodaniel', owner).replace('kalodaniel.github.io', repo).replace('breasts.json', path), {
+    method: 'PUT',
+    headers: {
+      'Authorization': authHeader,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: 'Fájl mentése',
+      content: btoa(unescape(encodeURIComponent(fileContent))), // Tartalom kódolása base64-be
+      sha: '' // Ha frissíteni szeretnénk a meglévő fájlt, itt meg kell adni a jelenlegi fájl SHA-1 hash értékét
+    })
+  })
+    .then(function(response) {
+      if (response.status === 200 || response.status === 201) {
+        alert('Az adatok sikeresen el lettek mentve!');
+      } else {
+        alert('Hiba történt az adatok mentése közben!');
+      }
+    })
+    .catch(function(error) {
+      alert('Hiba történt az adatok mentése közben!');
+      console.error(error);
+    });
 }
+
     
     function addRow() {
       var table = document.querySelector("table");
