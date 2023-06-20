@@ -77,9 +77,9 @@
   <button onclick="saveData()">Mentés</button>
 
   <script>
-   
 
-   function saveData() {
+
+    function saveData() {
   var table = document.querySelector("table");
   var rows = table.rows;
   var data = [];
@@ -96,34 +96,32 @@
     data.push(rowData);
   }
 
-  var csvContent = "data:text/csv;charset=utf-8,";
-  data.forEach(function(row) {
-    csvContent += row.join(";") + "\r\n"; // Pontosvessző elválasztás
-  });
+  var jsonData = JSON.stringify(data);
+  var base64Data = btoa(unescape(encodeURIComponent(jsonData)));
 
-  const githubApiUrl = "https://api.github.com/repos/kalodaniel/kalodaniel.github.io/contents/breasts.txt";
-  const githubToken = "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"; // Helyettesítsd be a GitHub hozzáférési tokened
-  const fileContent = csvContent;
+  var apiUrl = "https://api.github.com/repos/kalodaniel/kalodaniel.github.io/contents/breasts.json";
+  var requestData = {
+    message: "Update data",
+    content: base64Data
+  };
 
-  const requestOptions = {
+  fetch(apiUrl, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${githubToken}`
+      Authorization: "Bearer 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"
     },
-    body: JSON.stringify({
-      message: "Update breasts.txt",
-      content: btoa(fileContent)
+    body: JSON.stringify(requestData)
+  })
+    .then(function(response) {
+      if (response.ok) {
+        alert("Data saved successfully!");
+      } else {
+        throw new Error("Failed to save data: " + response.status);
+      }
     })
-  };
-
-  fetch(githubApiUrl, requestOptions)
-    .then(response => response.json())
-    .then(data => {
-      console.log("File saved:", data);
-    })
-    .catch(error => {
-      console.error("Error saving file:", error);
+    .catch(function(error) {
+      console.error(error);
     });
 }
 
