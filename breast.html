@@ -77,38 +77,39 @@
   <button onclick="saveData()">Mentés</button>
 
   <script>
-    function saveData() {
-      var table = document.querySelector("table");
-      var rows = table.rows;
-      var data = [];
-      
-      for (var i = 1; i < rows.length; i++) {
-        var cells = rows[i].cells;
-        var rowData = [];
-        
-        for (var j = 0; j < cells.length - 2; j++) {
-          rowData.push(cells[j].textContent.trim());
-        }
-        
-        rowData.push(cells[4].getAttribute("data-value")); // Nehézség érték hozzáadása
-        data.push(rowData);
-      }
-      
-      var csvContent = "data:text/csv;charset=utf-8,";
-      data.forEach(function(row) {
-        csvContent += row.join(";") + "\r\n"; // Pontosvessző elválasztás
-      });
-      
-      var encodedUri = encodeURI(csvContent);
-      var link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "breast.csv");
-      document.body.appendChild(link);
-      
-      link.click();
-      
-      document.body.removeChild(link);
+   function saveData() {
+  var table = document.querySelector("table");
+  var rows = table.rows;
+  var data = [];
+  
+  for (var i = 1; i < rows.length; i++) {
+    var cells = rows[i].cells;
+    var rowData = [];
+    
+    for (var j = 0; j < cells.length - 2; j++) {
+      rowData.push(cells[j].textContent.trim());
     }
+    
+    rowData.push(cells[4].getAttribute("data-value")); // Nehézség érték hozzáadása
+    data.push(rowData);
+  }
+  
+  var csvContent = "data:text/csv;charset=utf-8,";
+  data.forEach(function(row) {
+    csvContent += row.join(";") + "\r\n"; // Pontosvessző elválasztás
+  });
+  
+  // Fájl letöltése
+  var encodedUri = encodeURI(csvContent);
+  var link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "breast.csv");
+  document.body.appendChild(link);
+  
+  link.click();
+  
+  document.body.removeChild(link);
+}
     
     function addRow() {
       var table = document.querySelector("table");
